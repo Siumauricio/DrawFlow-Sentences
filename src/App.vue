@@ -8,11 +8,11 @@
         <div class="col-md-6 mx-auto" style="width: 200px; text-align: center; padding-right: 0px; padding-left: 0px;">
             <ul style="padding-left: 0px; margin-bottom: 0px;">
               <li v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
-                <div class="node"  :style="`background: ${n.color};` ">{{ n.name }}</div>
+                <div v-on:click="info($event)" class="node"  :style="`background: ${n.color};` ">{{ n.name }}</div>
             </li>
             </ul>
         </div>
-        <div class="col-md-6 mx-auto" style="width: 1181px;padding-right: 0px;padding-left: 0px; ">
+        <div class="col-md-6 mx-auto" style="width: 1181px;padding-right: 0px;padding-left: 0px; "  @mousemove="getResultados($event)">
               <div id="drawflow" @drop="drop($event)" @dragover="allowDrop($event)">
           </div>
         </div>
@@ -31,7 +31,7 @@
 
 <script>
 /*eslint-disable */
-import { h, getCurrentInstance, render, readonly, ref ,onMounted,shallowRef} from 'vue'
+import { h, getCurrentInstance, render, readonly, ref ,onMounted,shallowRef, onBeforeUnmount} from 'vue'
 import NodeClick from './components/NodeClick.vue'
 import Drawflow from 'drawflow'
 import styleDrawflow from 'drawflow/dist/drawflow.min.css' // eslint-disable-line no-use-before-define
@@ -84,7 +84,7 @@ export default {
             color: 'yellow',
             item: 'Assignation',
             input:1,
-            output:0
+            output:1
         },
         {
             name: 'For',
@@ -143,14 +143,19 @@ export default {
     const allowDrop = (ev) => {
       ev.preventDefault();
     }
-        const  addNodeToDrawFlow = (name, pos_x, pos_y)=> {
+     const  addNodeToDrawFlow = (name, pos_x, pos_y)=> {
+     const value = editor.value.on('nodeCreated',(id)=>{
+                  //  console.log(id)
+          })
+
       pos_x = pos_x * ( editor.value.precanvas.clientWidth / (editor.value.precanvas.clientWidth * editor.value.zoom)) - (editor.value.precanvas.getBoundingClientRect().x * ( editor.value.precanvas.clientWidth / (editor.value.precanvas.clientWidth * editor.value.zoom)));
       pos_y = pos_y * ( editor.value.precanvas.clientHeight / (editor.value.precanvas.clientHeight * editor.value.zoom)) - (editor.value.precanvas.getBoundingClientRect().y * ( editor.value.precanvas.clientHeight / (editor.value.precanvas.clientHeight * editor.value.zoom)));
     
       const nodeSelected = listNodes.find(ele => ele.item == name);
-      editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {}, name, 'vue');
-       // editor.on('nodeCreated');
-
+      const nodo = editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {}, name, 'vue');
+      console.log(nodo)
+    
+    
     }
 
         onMounted(() => {
@@ -168,33 +173,32 @@ export default {
        editor.value.registerNode('If', <If />, {}, {});
        editor.value.registerNode('Else', <Else />, {}, {});
 
-       // editor.reroute = true;
-        // editor.start();
 
-        // const props = {};
-        // const options = {};
-        // const value = <Number />;
-        // // console.log(value)
-        // editor.registerNode('Number',value ,props,options);
-        // editor.registerNode('Add',AddVue,props,options);
-        // editor.registerNode('NodeClick', NodeClick, props, options);
-        // const data = {}
-        // editor.addNode('Name3', 0, 1, 120, 250, 'Number',data, 'Number', 'vue');
-        // editor.addNode('Name3', 2, 0, 150, 300, 'Add', data, 'Add', 'vue');
-        // editor.addNode('Name3', 0, 1, 120, 250, 'Number',data, 'Number', 'vue');
     });
+    const getResultados = (e) => {
+      var exportdata = editor.value.export();
+      console.log(exportdata)
+       //const result = editor.value.getNodeFromId(editor.value.nodeId);
+      //console.log( editor.value.nodeId)
+      // if(Object.keys(result).length === 0 && result.constructor === Object ){
+      //    console.log('No hay resultados')
+      // }else{
+      //   if(Object.keys(result.data).length === 0 && result.data.constructor === Object){
+      //   console.log('No hay resultados')
+      // } else{
+      //   console.log(parseInt(result.data.data.number))
+      //   }
+      // }
 
-    //var html2 = `<div><input type="text" df-name></div>`;
-   
-  
-    //call a value from component vue
+    }
     
-  
-    //editor.addNode('Name1', 1, 0, 150, 300, 'Class1', data, 'NodeClick', 'vue');
-    //editor.addNode('Name2', 0, 1, 150, 150, 'Class2', data, 'NodeClick', 'vue');
-    //editor.addNode('Name2', 0, 1, 150, 300, 'github', data, html2);
-    return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData}
+    return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData,getResultados}
   },
+  methods:{
+   info (ev){
+      console.log(ev)
+    }
+  }
  
 }
 </script>
@@ -211,11 +215,14 @@ export default {
     height: 94.5vh;
     padding: 0px;
     margin: 0px;
+    background: #2b2c30;
+      background-size: 20px 20px;
+      background-image: radial-gradient(#494949 1px, transparent 1px);
 }
 #drawflow {
   width: 100%;
   height: 95.8vh;
-  border: 3px solid rgb(177, 112, 112);
+  border: 3px solid #181818;
   border-radius : 10px;
   text-align: initial;
   background: #2b2c30;
@@ -248,6 +255,21 @@ ul {
     margin: 10px 0px;
     cursor: move;
     text-align: center;
+    background-color: #2b2c30;
 
 }
+
+.drawflow .drawflow-node {
+    border-radius: 8px;
+    background: #181818;
+    border: 2px solid #494949;
+    color: white;
+    min-width: 250px;
+}
+
+.drawflow .drawflow-node.selected {
+    background: #181818;
+    border: 2px solid rgb(241, 241, 241);
+}
+
 </style>
