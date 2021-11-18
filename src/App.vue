@@ -2,29 +2,29 @@
   
 
 <template>
-<div id="app">
-  <div class="container" style="border: 3px solid rgb(177, 112, 112); border-radius : 10px; max-width:100%">
+<div id="app" >
+  <div class="container" style="height:1000px; max-width:100%;max-height:100%;">
     <div class="row">
         <div class="col-md-6 mx-auto" style="width: 200px; text-align: center; padding-right: 0px; padding-left: 0px;">
-            <ul style="padding-left: 0px; margin-bottom: 0px;">
-              <li v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
+            <ul class="list-group " style="padding-left: 0px; margin-bottom: 10px; margin-top:10px;">
+
+              <li class="list-group-item list-group-item-action list-group-item-primary" v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
                 <div v-on:click="info($event)" class="node"  :style="`background: ${n.color};` ">{{ n.name }}</div>
             </li>
+              <li class="list-group">
+                <button v-on:click="validateSemantic($event)" type="button" class="btn btn-success mb-0" >Validate Semantic</button>
+                <button v-on:click="generatePythonCode($event)" type="button" class="btn btn-primary" >Generate Python Code</button>
+              </li>
             </ul>
+
+
         </div>
-        <div class="col-md-6 mx-auto" style="width: 1181px;padding-right: 0px;padding-left: 0px; "  @mousemove="getResultados($event)">
-              <div id="drawflow" @drop="drop($event)" @dragover="allowDrop($event)">
+        <div class="col-md-6 mx-auto" style="padding-top:10px;height:100vh;min-height:492px;width: 1181px;padding-right: 0px;padding-left: 0px; "  >
+              <div class="border" id="drawflow" @drop="drop($event)" @dragover="allowDrop($event)">
           </div>
         </div>
     </div>
 </div>
-
-
-    <!-- <ul> -->
-          <!-- <li v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
-          <div class="node"  :style="`background: ${n.color}`">{{ n.name }}</div>
-            </li> -->
-        <!-- </ul> -->
 
 </div>
 </template>
@@ -41,71 +41,71 @@ import Assignation from './components/Assignation.vue'
 import For from './components/For.vue'
 import If from './components/If.vue'
 import Else from './components/Else.vue'
+import Print from './components/Print.vue'
+
+
 export default {
   name: 'App',
   setup(){
      const listNodes = readonly([
         {
             name: 'Number',
-            color: '#EDDCD2',
             item: 'Number',
             input:0,
             output:1
         },
         {
             name: 'Add',
-            color: 'red',
             item: 'Add',
             input:2,
             output:1
         },
         {
             name: 'Sub',
-            color: 'blue',
             item: 'Sub',
             input:2,
             output:1
         },
         {
             name: 'Multiply',
-            color: 'pink',
             item: 'Multiply',
             input:2,
             output:1
         },
          {
             name: 'Divide',
-            color: 'green',
             item: 'Divide',
             input:2,
             output:1
         },{
             name: 'Assignation',
-            color: 'yellow',
             item: 'Assignation',
             input:1,
             output:1
         },
         {
             name: 'For',
-            color: 'White',
             item: 'For',
             input:1,
-            output:0
+            output:1
         },
          {
             name: 'If',
-            color: 'brown',
             item: 'If',
             input:1,
             output:1
         },
          {
             name: 'Else',
-            color: 'cyan',
             item: 'Else',
             input:1,
-            output:0
+            output:1
+        },
+         {
+            name: 'Print',
+            item: 'Print',
+            input:1,
+            output:1
         },
         
     ])
@@ -114,8 +114,7 @@ export default {
    const dialogData = ref({})
    const internalInstance = getCurrentInstance()
    internalInstance.appContext.app._context.config.globalProperties.$df = editor;
-     const Vue = { version: 3, h, render };
-
+   const Vue = { version: 3, h, render };
 
 
     const drag =(ev) =>{
@@ -143,56 +142,61 @@ export default {
     const allowDrop = (ev) => {
       ev.preventDefault();
     }
-     const  addNodeToDrawFlow = (name, pos_x, pos_y)=> {
-     const value = editor.value.on('nodeCreated',(id)=>{
-                  //  console.log(id)
-          })
 
+     const  addNodeToDrawFlow = (name, pos_x, pos_y)=> {
       pos_x = pos_x * ( editor.value.precanvas.clientWidth / (editor.value.precanvas.clientWidth * editor.value.zoom)) - (editor.value.precanvas.getBoundingClientRect().x * ( editor.value.precanvas.clientWidth / (editor.value.precanvas.clientWidth * editor.value.zoom)));
       pos_y = pos_y * ( editor.value.precanvas.clientHeight / (editor.value.precanvas.clientHeight * editor.value.zoom)) - (editor.value.precanvas.getBoundingClientRect().y * ( editor.value.precanvas.clientHeight / (editor.value.precanvas.clientHeight * editor.value.zoom)));
-    
+      
       const nodeSelected = listNodes.find(ele => ele.item == name);
-      const nodo = editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {}, name, 'vue');
-      console.log(nodo)
-    
-    
+      assignDefaultValues(nodeSelected,name, pos_x, pos_y);
     }
 
+
+    const assignDefaultValues =(nodeSelected,name, pos_x, pos_y)=>{
+      if(nodeSelected.name == 'Add' || nodeSelected.name == 'Sub' || nodeSelected.name == 'Multiply' || nodeSelected.name == 'Divide'){
+       const nodo = editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {Number1:0,Number2:0},  name, 'vue');
+      //  console.log('Nodo Creado:',editor.value.getNodeFromId(nodo));
+      //  console.log(nodo)
+      }else if(nodeSelected.name == 'Number'){
+      editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {Number:0}, name, 'vue');
+      }else{
+        editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {}, name, 'vue');
+      }
+    }
         onMounted(() => {
         var id = document.getElementById("drawflow");
         editor.value = new Drawflow(id, Vue, internalInstance.appContext.app._context);
         editor.value.start();
-       
+
+     
        editor.value.registerNode('Number', <Number/>, {}, {});
-       editor.value.registerNode('Add', <Operation title="Add"/>, {}, {});
-       editor.value.registerNode('Sub', <Operation title="Sub"/>, {}, {});
+       editor.value.registerNode('Add', <Operation title="Add"  editor={editor.value}/>, {}, {});
+       editor.value.registerNode('Sub', <Operation title="Sub" editor={editor.value}/>, {}, {});
        editor.value.registerNode('Multiply', <Operation title="Multiply"/>, {}, {});
        editor.value.registerNode('Divide', <Operation title="Divide"/>, {}, {});
        editor.value.registerNode('Assignation', <Assignation />, {}, {});
        editor.value.registerNode('For', <For />, {}, {});
        editor.value.registerNode('If', <If />, {}, {});
        editor.value.registerNode('Else', <Else />, {}, {});
-
-
+       editor.value.registerNode('Print', <Print />, {}, {});
     });
-    const getResultados = (e) => {
+
+    // this.$internalInstance.on('connectionCreated',(event) => {
+    //   console.log(event)
+    // })
+    
+    const generatePythonCode = (e) => {
       var exportdata = editor.value.export();
       console.log(exportdata)
-       //const result = editor.value.getNodeFromId(editor.value.nodeId);
-      //console.log( editor.value.nodeId)
-      // if(Object.keys(result).length === 0 && result.constructor === Object ){
-      //    console.log('No hay resultados')
-      // }else{
-      //   if(Object.keys(result.data).length === 0 && result.data.constructor === Object){
-      //   console.log('No hay resultados')
-      // } else{
-      //   console.log(parseInt(result.data.data.number))
-      //   }
-      // }
+
+    }
+
+
+    const validateSemantic = (e) =>{
 
     }
     
-    return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData,getResultados}
+    return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData,generatePythonCode,validateSemantic,internalInstance}
   },
   methods:{
    info (ev){
@@ -212,23 +216,22 @@ export default {
   font-size: 13px;
   text-align: initial;
   width: 100vw;
-    height: 94.5vh;
-    padding: 0px;
-    margin: 0px;
-    background: #2b2c30;
-      background-size: 20px 20px;
-      background-image: radial-gradient(#494949 1px, transparent 1px);
+  height: 100vh;
+  padding: 0px;
+  margin: 0px;
+  background: #2b2c30;
+  background-size: 20px 20px;
+  background-image: radial-gradient(#494949 1px, transparent 1px);
 }
 #drawflow {
+  box-sizing: border-box;
   width: 100%;
-  height: 95.8vh;
-  border: 3px solid #181818;
-  border-radius : 10px;
+  height:95%;
+  
   text-align: initial;
   background: #2b2c30;
   background-size: 20px 20px;
   background-image: radial-gradient(#494949 1px, transparent 1px);
-  
 }
 .column {
     width: 25px;
@@ -237,7 +240,6 @@ export default {
 .column ul {
     padding-inline-start: 0px;
     padding: 10px 10px;
- 
 }
 
 ul {
@@ -247,15 +249,14 @@ ul {
     background: transparent;
 }
 .node {
-    border-radius: 8px;
-    border: 2px solid #000000;
+    /* border-radius: 8px;
+    border: 2px solid #000000; */
     display: block;
     height:40px;
     line-height:40px;
     margin: 10px 0px;
     cursor: move;
     text-align: center;
-    background-color: #2b2c30;
 
 }
 
@@ -271,5 +272,11 @@ ul {
     background: #181818;
     border: 2px solid rgb(241, 241, 241);
 }
+
+.drawflow .drawflow-node .drawflow_content_node input, .drawflow .drawflow-node .drawflow_content_node .el-select, .drawflow .drawflow-node .drawflow_content_node button {
+    width: 100%; 
+}
+
+
 
 </style>
