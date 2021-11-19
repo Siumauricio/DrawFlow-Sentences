@@ -7,7 +7,7 @@
         <input class="form-control" type="number"  />
     </div>
 </template>
-
+ 
 <script>
 export default {
     name: 'For',

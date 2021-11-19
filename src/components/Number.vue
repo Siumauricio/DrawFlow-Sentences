@@ -16,7 +16,10 @@ export default {
             number: 0
         }
     },
-    setup(){
+    props:{
+        editor:null
+    },
+    setup({editor}){
          const el = ref(null);
         const nodeId = ref(0);
         let df = null
@@ -31,33 +34,40 @@ export default {
              df.updateNodeDataFromId(nodeId.value, {Number:parseInt(e.target.value)});
             }
         }
-
-
          onMounted(() => {
             nodeId.value = df.nodeId;
              setTimeout(() => {
                dataNode.value = df.getNodeFromId(nodeId.value);
             },0);
+
+    //   editor.on('connectionCreated',function connexionCreada(dataNode){
+    //    console.log('-----Numero connectionCreated------')
+    //    console.log(editor.events.connectionCreated)
+    //    editor.removeListener('connectionCreated',connexionCreada)
+
+    //     })
+    //  editor.on('connectionRemoved', function connectionRemovedd (dataNode){
+         
+    //     // console.log(editor.events.connectionRemoved.listeners);
+    //     editor.removeListener('connectionRemoved',connectionRemovedd)
+    //     // console.log(editor.events.connectionRemoved.listeners);
+    //   });
+
+
+        // console.log(editor.removeListener('connectionCreated',0))
+        // await nextTick(()=>{
+
+        //     // if(editor.events.connectionCreated?.listeners.length > 0){
+        //     //     editor.events.connectionCreated.listeners.pop();
+        //     // }
+
+        // })
+        
         });
 
 
         return { df,nodeId, dataNode,updateNumber }
     }
-    // ,watch:{
-    //     // number:function(value){
-    //     //     const obj = this.df.getNodeFromId(this.nodeId);
-    //     //     this.df.updateNodeDataFromId(this.nodeId,{Number:value});
-    //     //     if (obj.outputs.output_1.connections.length == 1){
-    //     //          const operation = this.df.getNodeFromId(parseInt(obj.outputs.output_1.connections[0].node));
-    //     //         if (obj.outputs.output_1.connections[0].output == 'input_1'){
-    //     //              this.df.updateNodeDataFromId(parseInt(obj.outputs.output_1.connections[0].node),{Number1:value,Number2:operation.data.Number2});
-    //     //         }else if(obj.outputs.output_1.connections[0].output == 'input_2'){
-    //     //           this.df.updateNodeDataFromId(parseInt(obj.outputs.output_1.connections[0].node),{Number1:operation.data.Number1,Number2:value});
-    //     //         }
-    //     //     // console.log(this.df.getNodeFromId(parseInt(obj.outputs.output_1.connections[0].node)))
-    //     //     }
-    //     // }
-    // }
 }
 </script>
 
