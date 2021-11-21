@@ -17,7 +17,9 @@ export default createStore({
          state.Operations[operation.id] = operation.value;
       },
       deleteOperation(state, operation) {
+         // state.Operations[operation.id] = null;
          delete state.Operations[operation.id];
+         // console.log(state.Operations);
       },
       addStatement(state, statement) {
          state.Statements[statement] = statement;

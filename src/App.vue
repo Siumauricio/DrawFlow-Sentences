@@ -5,7 +5,7 @@
             <div class="col-md-6 mx-auto" style="width: 200px; text-align: center; padding-right: 0px; padding-left: 0px">
                <ul class="list-group" style="padding-left: 0px; margin-bottom: 10px; margin-top: 10px">
                   <li class="list-group-item list-group-item-action list-group-item-primary" v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
-                     <div v-on:click="info($event)" class="node" :style="`background: ${n.color};`">{{ n.name }}</div>
+                     <div class="node" :style="`background: ${n.color};`">{{ n.name }}</div>
                   </li>
                   <li class="list-group">
                      <button v-on:click="generatePythonCode($event)" type="button" class="btn btn-primary">Generate Python Code</button>
@@ -106,7 +106,7 @@ export default {
       const internalInstance = getCurrentInstance();
       internalInstance.appContext.app._context.config.globalProperties.$df = editor;
       const Vue = {version: 3, h, render};
-      const {dispatch} = useStore();
+      const {state, dispatch} = useStore();
 
       const drag = (ev) => {
          if (ev.type === "touchstart") {
@@ -147,7 +147,7 @@ export default {
 
       const assignDefaultValues = (nodeSelected, name, pos_x, pos_y) => {
          if (nodeSelected.name == "Add" || nodeSelected.name == "Sub" || nodeSelected.name == "Multiply" || nodeSelected.name == "Divide") {
-            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Number1: 0, Number2: 0}, name, "vue");
+            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Number1: 0, Number2: 0, Result: 0}, name, "vue");
          } else if (nodeSelected.name == "Number") {
             editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Number: 0}, name, "vue");
          } else {
@@ -159,14 +159,37 @@ export default {
          const input = editor.value.getNodeFromId(data.input_id);
          const output = editor.value.getNodeFromId(data.output_id);
 
-         if (data.input_class == "input_1") {
-            editor.value.updateNodeDataFromId(data.input_id, {Number1: parseInt(output.data.Number), Number2: input.data.Number2});
-            dispatch("setOperationAction", {id: data.input_id, value: {Number1: parseInt(output.data.Number), Number2: parseInt(input.data.Number2)}});
-         } else if (data.input_class == "input_2") {
-            editor.value.updateNodeDataFromId(data.input_id, {Number1: input.data.Number1, Number2: parseInt(output.data.Number)});
-            dispatch("setOperationAction", {id: data.input_id, value: {Number1: parseInt(input.data.Number1), Number2: parseInt(output.data.Number)}});
+         if ((input.class == "Add" || input.class == "Sub" || input.class == "Multiply" || input.class == "Divide") && (output.class == "Add" || output.class == "Sub" || output.class == "Multiply" || output.class == "Divide")) {
+            if (data.input_class == "input_1") {
+               const result = evaluateExpressions(input.class, parseInt(output.data.Result), parseInt(input.data.Number2));
+               const object = {Number1: parseInt(output.data.Result), Number2: parseInt(input.data.Number2), Result: result};
+               console.log(object);
+               editor.value.updateNodeDataFromId(data.input_id, object);
+               dispatch("setOperationAction", {id: data.input_id, value: object});
+            } else if (data.input_class == "input_2") {
+               const result = evaluateExpressions(input.class, parseInt(input.data.Number1), parseInt(output.data.Result));
+               const object = {Number1: parseInt(input.data.Number1), Number2: parseInt(output.data.Result), Result: result};
+               editor.value.updateNodeDataFromId(data.input_id, object);
+               dispatch("setOperationAction", {id: data.input_id, value: object});
+            }
+
+            console.log("Operaciones arimeticas validas");
+         } else {
+            if (data.input_class == "input_1") {
+               const result = evaluateExpressions(input.class, parseInt(output.data.Number), parseInt(input.data.Number2));
+               const object = {Number1: parseInt(output.data.Number), Number2: parseInt(input.data.Number2), Result: result};
+               console.log(object);
+               editor.value.updateNodeDataFromId(data.input_id, object);
+               dispatch("setOperationAction", {id: data.input_id, value: object});
+            } else if (data.input_class == "input_2") {
+               const result = evaluateExpressions(input.class, parseInt(input.data.Number1), parseInt(output.data.Number));
+               const object = {Number1: parseInt(input.data.Number1), Number2: parseInt(output.data.Number), Result: result};
+               editor.value.updateNodeDataFromId(data.input_id, object);
+               dispatch("setOperationAction", {id: data.input_id, value: object});
+            }
          }
       };
+
       const updateValues = (id) => {
          const input = editor.value.getNodeFromId(id);
          const {
@@ -174,19 +197,74 @@ export default {
                output_1: {connections},
             },
          } = input;
+         console.log(id);
+
          if (connections.length == 1 && input.class == "Number") {
             const {node, output} = connections[0];
             const expression = editor.value.getNodeFromId(node);
             if (output == "input_1") {
-               console.log(expression);
-               editor.value.updateNodeDataFromId(node, {Number1: parseInt(input.data.number), Number2: expression.data.Number2});
-               dispatch("setOperationAction", {id: node, value: {Number1: parseInt(input.data.number), Number2: parseInt(expression.data.Number2)}});
+               const result = evaluateExpressions(expression.class, parseInt(input.data.number), parseInt(expression.data.Number2));
+               const object = {Number1: parseInt(input.data.number), Number2: parseInt(expression.data.Number2), Result: result};
+               editor.value.updateNodeDataFromId(node, object);
+               dispatch("setOperationAction", {id: node, value: object});
+
+               updateNodes(node);
             } else if (output == "input_2") {
-               editor.value.updateNodeDataFromId(node, {Number1: expression.data.Number1, Number2: parseInt(input.data.number)});
-               dispatch("setOperationAction", {id: node, value: {Number1: parseInt(expression.data.Number1), Number2: parseInt(input.data.number)}});
+               const result = evaluateExpressions(expression.class, parseInt(expression.data.Number1), parseInt(input.data.number));
+               const object = {Number1: parseInt(expression.data.Number1), Number2: parseInt(input.data.number), Result: result};
+               editor.value.updateNodeDataFromId(node, object);
+               dispatch("setOperationAction", {id: node, value: object});
             }
          }
       };
+
+      const updateNodes = (id) => {
+         let actualizar = id;
+         while (true) {
+            const to = editor.value.getNodeFromId(actualizar);
+            const {
+               outputs: {
+                  output_1: {connections},
+               },
+            } = to;
+            console.log("Hola");
+            if (connections.length == 1) {
+               const {node, output} = connections[0];
+               const expression = editor.value.getNodeFromId(node);
+
+               if (output == "input_1") {
+                  const result = evaluateExpressions(expression.class, parseInt(to.data.Result), parseInt(expression.data.Number2));
+                  const object = {Number1: parseInt(to.data.Result), Number2: parseInt(expression.data.Number2), Result: result};
+                  editor.value.updateNodeDataFromId(node, object);
+                  dispatch("setOperationAction", {id: node, value: object});
+                  actualizar = node;
+               } else if (output == "input_2") {
+                  const result = evaluateExpressions(expression.class, parseInt(expression.data.Number1), parseInt(to.data.Result));
+                  const object = {Number1: parseInt(expression.data.Number1), Number2: parseInt(to.data.Result), Result: result};
+                  editor.value.updateNodeDataFromId(node, object);
+                  dispatch("setOperationAction", {id: node, value: object});
+                  actualizar = node;
+               }
+            } else {
+               break;
+            }
+         }
+      };
+
+      const evaluateExpressions = (expressionType, number1, number2) => {
+         let result = 0;
+         if (expressionType == "Add") {
+            result = number1 + number2;
+         } else if (expressionType == "Sub") {
+            result = number1 - number2;
+         } else if (expressionType == "Multiply") {
+            result = number1 * number2;
+         } else if (expressionType == "Divide") {
+            result = number1 / number2;
+         }
+         return result;
+      };
+
       onMounted(() => {
          var id = document.getElementById("drawflow");
          editor.value = new Drawflow(id, Vue, internalInstance.appContext.app._context);
@@ -197,13 +275,14 @@ export default {
             if (typeNode == "Number") {
                dispatch("setNumberAction", {id: id, value: 0});
             } else if (typeNode == "Add" || typeNode == "Sub" || typeNode == "Multiply" || typeNode == "Divide") {
-               dispatch("setOperationAction", {id: id, value: {Number1: 0, Number2: 0}});
+               dispatch("setOperationAction", {id: id, value: {Number1: 0, Number2: 0, Result: 0}});
             }
+            console.log(typeNode);
          });
 
          editor.value.on("nodeRemoved", (id) => {
-            dispatch("deleteNumberAction", {id: id});
             dispatch("deleteOperationAction", {id: id});
+            dispatch("deleteNumberAction", {id: id});
          });
 
          editor.value.on("nodeDataChanged", (dataNode) => {
@@ -211,10 +290,12 @@ export default {
          });
 
          editor.value.on("connectionCreated", (dataNode) => {
+            //terminado
             assignValues(dataNode);
          });
 
          editor.value.on("connectionRemoved", (dataNode) => {
+            console.log("connectionRemoved");
             removeValues(dataNode);
          });
 
@@ -233,11 +314,17 @@ export default {
       const removeValues = (data) => {
          const input = editor.value.getNodeFromId(data.input_id);
          if (data.input_class == "input_1") {
-            editor.value.updateNodeDataFromId(data.input_id, {Number1: 0, Number2: input.data.Number2});
-            dispatch("setOperationAction", {id: data.input_id, value: {Number1: 0, Number2: parseInt(input.data.Number2)}});
+            const result = evaluateExpressions(input.class, 0, parseInt(input.data.Number2));
+            const object = {Number1: 0, Number2: parseInt(input.data.Number2), Result: result};
+            editor.value.updateNodeDataFromId(data.input_id, object);
+            dispatch("setOperationAction", {id: data.input_id, value: object});
+            updateNodes(data.input_id);
          } else if (data.input_class == "input_2") {
-            editor.value.updateNodeDataFromId(data.input_id, {Number1: input.data.Number1, Number2: 0});
-            dispatch("setOperationAction", {id: data.input_id, value: {Number1: parseInt(input.data.Number1), Number2: 0}});
+            const result = evaluateExpressions(input.class, parseInt(input.data.Number1), 0);
+            const object = {Number1: parseInt(input.data.Number1), Number2: 0, Result: result};
+            editor.value.updateNodeDataFromId(data.input_id, object);
+            dispatch("setOperationAction", {id: data.input_id, value: object});
+            updateNodes(data.input_id);
          }
       };
 
