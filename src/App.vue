@@ -150,8 +150,16 @@ export default {
             editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Number1: 0, Number2: 0, Result: 0}, name, "vue");
          } else if (nodeSelected.name == "Number") {
             editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Number: 0}, name, "vue");
-         } else {
+         } else if(nodeSelected.name == "For"){
+            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Start:0,Finish:0}, name, "vue");
+         }else if(nodeSelected.name == "If"){
+            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Expression1:'',Operator:'',Expression2:''}, name, "vue");
+         }else if(nodeSelected.name == "Else"){
             editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {}, name, "vue");
+         }else if(nodeSelected.name == "Print"){
+            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {}, name, "vue");
+         }else if(nodeSelected.name == "Assignation"){
+            editor.value.addNode(name, nodeSelected.input, nodeSelected.output, pos_x, pos_y, name, {Value:0,Name:""}, name, "vue");
          }
       };
 
@@ -163,7 +171,6 @@ export default {
             if (data.input_class == "input_1") {
                const result = evaluateExpressions(input.class, parseInt(output.data.Result), parseInt(input.data.Number2));
                const object = {Number1: parseInt(output.data.Result), Number2: parseInt(input.data.Number2), Result: result};
-               console.log(object);
                editor.value.updateNodeDataFromId(data.input_id, object);
                dispatch("setOperationAction", {id: data.input_id, value: object});
             } else if (data.input_class == "input_2") {
@@ -178,7 +185,6 @@ export default {
             if (data.input_class == "input_1") {
                const result = evaluateExpressions(input.class, parseInt(output.data.Number), parseInt(input.data.Number2));
                const object = {Number1: parseInt(output.data.Number), Number2: parseInt(input.data.Number2), Result: result};
-               console.log(object);
                editor.value.updateNodeDataFromId(data.input_id, object);
                dispatch("setOperationAction", {id: data.input_id, value: object});
             } else if (data.input_class == "input_2") {
@@ -197,7 +203,6 @@ export default {
                output_1: {connections},
             },
          } = input;
-         console.log(id);
 
          if (connections.length == 1 && input.class == "Number") {
             const {node, output} = connections[0];
@@ -252,6 +257,8 @@ export default {
       };
 
       const evaluateExpressions = (expressionType, number1, number2) => {
+         number1 = isNaN(number1) ? 0 : number1;
+         number2 = isNaN(number2) ? 0 : number2;
          let result = 0;
          if (expressionType == "Add") {
             result = number1 + number2;
@@ -261,6 +268,9 @@ export default {
             result = number1 * number2;
          } else if (expressionType == "Divide") {
             result = number1 / number2;
+         }
+         if (isNaN(result)) {
+            result = 0;
          }
          return result;
       };
@@ -277,7 +287,6 @@ export default {
             } else if (typeNode == "Add" || typeNode == "Sub" || typeNode == "Multiply" || typeNode == "Divide") {
                dispatch("setOperationAction", {id: id, value: {Number1: 0, Number2: 0, Result: 0}});
             }
-            console.log(typeNode);
          });
 
          editor.value.on("nodeRemoved", (id) => {
@@ -290,7 +299,6 @@ export default {
          });
 
          editor.value.on("connectionCreated", (dataNode) => {
-            //terminado
             assignValues(dataNode);
          });
 
@@ -328,9 +336,62 @@ export default {
          }
       };
 
+      const getParentsNodes =(exportdata) =>{
+         const dataNodes = exportdata.drawflow.Home.data;
+         const array = Object.values(dataNodes);
+         const isRoot = ({inputs,name}) => {
+               if(name == "Assignation"){
+                  if (inputs.input_1.connections.length == 1) {
+                     return true;
+                  }
+               }
+               if (inputs.hasOwnProperty('input_1') && (name == "For" || name == "If" )) {
+                  if (inputs.input_1.connections.length == 0) {
+                     return true;
+                  }
+               } 
+               return false;
+         };
+         
+         return array.filter((node) => isRoot(node,node.class)=== true && node.class !== "Number" && node.class !== "Add" && node.class !== "Sub" && node.class !== "Multiply" && node.class !== "Divide" && node.class !=="Print");
+      }
+      const codex = (array,editor) =>{
+         let code = "";
+         let i = 0;
+         while(array.length > 0){
+            
+            const node = array.shift();
+          console.log(node);
+            
+            code += node.name ;
+            if(node.name == "For"){
+               code += " i "+ "in" + " range(" + node.data.Start + "," + node.data.Finish + "):\n";
+            }else if(node.name == "If"){
+               code += " "+ node.data.Expression1 +" "+  node.data.Operator+" " + node.data.Expression2 + ":\n";
+            }else if(node.name == "Assignation"){
+               code += node.data.Variable + " = " + node.data.Value + "\n";
+            }
+
+            console.log(code);
+            
+         }
+
+         //console.log(editor)
+
+      }
       const generatePythonCode = (e) => {
          var exportdata = editor.value.export();
-         console.log(exportdata);
+         const dataNodes = exportdata.drawflow.Home.data;
+
+         const array = Object.values(dataNodes);
+
+         const parentsArray = getParentsNodes(exportdata);
+         const code = codex(parentsArray,array);
+         console.log(parentsArray);
+       
+         //const statements = 
+
+        //console.log(exportdata);
       };
 
       return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance};

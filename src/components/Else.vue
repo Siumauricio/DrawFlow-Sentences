@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Else</h4>
+        <h3 class="text-2xl">Else</h3>
     </div>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Print</h4>
+        <h4 class="text-2xl">Print</h4>
     </div>
 </template>
 
