@@ -166,7 +166,6 @@ export default {
       const assignValues = (data) => {
          const input = editor.value.getNodeFromId(data.input_id);
          const output = editor.value.getNodeFromId(data.output_id);
-
          if ((input.class == "Add" || input.class == "Sub" || input.class == "Multiply" || input.class == "Divide") && (output.class == "Add" || output.class == "Sub" || output.class == "Multiply" || output.class == "Divide")) {
             if (data.input_class == "input_1") {
                const result = evaluateExpressions(input.class, parseInt(output.data.Result), parseInt(input.data.Number2));
@@ -180,19 +179,27 @@ export default {
                dispatch("setOperationAction", {id: data.input_id, value: object});
             }
 
-            console.log("Operaciones arimeticas validas");
+            //console.log("Operaciones arimeticas validas");
          } else {
-            if (data.input_class == "input_1") {
+           // console.log(data)
+           if(output.class == "If" || output.class == "For" || output.class == "Else"){
+              return;
+           }
+            if(input.class == "Assignation" && (output.class == "Add" || output.class == "Sub" || output.class =="Multiply" || output.class == "Divide")){
+              editor.value.updateNodeDataFromId(input.id,{Value: output.data.Result, Name: input.data.Name});
+            } else if (data.input_class == "input_1" && input.class !="If" && input.class !="For"&& input.class !="Else"&& input.class !="Print") {
+               console.log('Entre')
                const result = evaluateExpressions(input.class, parseInt(output.data.Number), parseInt(input.data.Number2));
                const object = {Number1: parseInt(output.data.Number), Number2: parseInt(input.data.Number2), Result: result};
                editor.value.updateNodeDataFromId(data.input_id, object);
                dispatch("setOperationAction", {id: data.input_id, value: object});
-            } else if (data.input_class == "input_2") {
+            } else if (data.input_class == "input_2" && input.class !="If"&& input.class !="For"&& input.class !="Else"&& input.class !="Print") {
                const result = evaluateExpressions(input.class, parseInt(input.data.Number1), parseInt(output.data.Number));
                const object = {Number1: parseInt(input.data.Number1), Number2: parseInt(output.data.Number), Result: result};
                editor.value.updateNodeDataFromId(data.input_id, object);
                dispatch("setOperationAction", {id: data.input_id, value: object});
-            }
+            } 
+            
          }
       };
 
@@ -203,10 +210,12 @@ export default {
                output_1: {connections},
             },
          } = input;
-
          if (connections.length == 1 && input.class == "Number") {
             const {node, output} = connections[0];
             const expression = editor.value.getNodeFromId(node);
+         console.log(input)
+
+            console.log(expression)
             if (output == "input_1") {
                const result = evaluateExpressions(expression.class, parseInt(input.data.number), parseInt(expression.data.Number2));
                const object = {Number1: parseInt(input.data.number), Number2: parseInt(expression.data.Number2), Result: result};
@@ -219,6 +228,7 @@ export default {
                const object = {Number1: parseInt(expression.data.Number1), Number2: parseInt(input.data.number), Result: result};
                editor.value.updateNodeDataFromId(node, object);
                dispatch("setOperationAction", {id: node, value: object});
+               updateNodes(node);
             }
          }
       };
@@ -232,10 +242,13 @@ export default {
                   output_1: {connections},
                },
             } = to;
-            console.log("Hola");
             if (connections.length == 1) {
                const {node, output} = connections[0];
                const expression = editor.value.getNodeFromId(node);
+                  if(expression.class == "Assignation"){
+                   editor.value.updateNodeDataFromId(expression.id,{Value: to.data.Result, Name: expression.data.Name});
+                   break;
+                  }
 
                if (output == "input_1") {
                   const result = evaluateExpressions(expression.class, parseInt(to.data.Result), parseInt(expression.data.Number2));
@@ -299,12 +312,13 @@ export default {
          });
 
          editor.value.on("connectionCreated", (dataNode) => {
-            assignValues(dataNode);
+            assignValues(dataNode);//Finish
          });
 
          editor.value.on("connectionRemoved", (dataNode) => {
-            console.log("connectionRemoved");
+            //console.log("connectionRemoved");
             removeValues(dataNode);
+            
          });
 
          editor.value.registerNode("Number", <Number />, {}, {});
@@ -355,26 +369,54 @@ export default {
          
          return array.filter((node) => isRoot(node,node.class)=== true && node.class !== "Number" && node.class !== "Add" && node.class !== "Sub" && node.class !== "Multiply" && node.class !== "Divide" && node.class !=="Print");
       }
-      const codex = (array,editor) =>{
+      const codex = (array) =>{
          let code = "";
          let i = 0;
          while(array.length > 0){
             
-            const node = array.shift();
-          console.log(node);
+          const node = array.shift();
+          //console.log(node);
             
-            code += node.name ;
             if(node.name == "For"){
-               code += " i "+ "in" + " range(" + node.data.Start + "," + node.data.Finish + "):\n";
+               code += " for i "+ "in" + " range(" + node.data.Start + "," + node.data.Finish + "):\n";
             }else if(node.name == "If"){
-               code += " "+ node.data.Expression1 +" "+  node.data.Operator+" " + node.data.Expression2 + ":\n";
+               code += "if "+ node.data.Expression1 +" "+  node.data.Operator+" " + node.data.Expression2 + ":\n";
             }else if(node.name == "Assignation"){
-               code += node.data.Variable + " = " + node.data.Value + "\n";
+               code += node.data.Name + " = " + node.data.Value + "\n";
             }
+            if(node.outputs.output_1.connections.length == 1){
+               let nodeId = node.outputs.output_1.connections[0].node;
+               let tabs = "\t";
+              while(true){
+                  let nodeActual =  editor.value.getNodeFromId(nodeId);
+               if(nodeActual.name == "For"){
+                  code += tabs+"for i "+ "in" + " range(" + nodeActual.data.Start + "," + nodeActual.data.Finish + "):\n";
+               }else if(nodeActual.name == "If"){
+                  code += tabs+"if "+ nodeActual.data.Expression1 +" "+  nodeActual.data.Operator+" " + nodeActual.data.Expression2 + ":\n";
+               }else if(nodeActual.name == "Assignation"){
+                  code += tabs+nodeActual.data.Name + " = " + nodeActual.data.Value + "\n";
+               }else if(nodeActual.name =="Else"){
+                  code += tabs+"else"+"\n";
+               }
+                 if(nodeActual.outputs.output_1.connections.length == 1){
+                        nodeId = nodeActual.outputs.output_1.connections[0].node;
+                        tabs +="\t";
+                  }else{
+                     break;
+                  }
 
-            console.log(code);
+            }
+            }
+          
+            }
+         console.log(code);
+
+            // while(true){
+
+            // }
+
             
-         }
+         
 
          //console.log(editor)
 
@@ -382,16 +424,15 @@ export default {
       const generatePythonCode = (e) => {
          var exportdata = editor.value.export();
          const dataNodes = exportdata.drawflow.Home.data;
-
          const array = Object.values(dataNodes);
 
          const parentsArray = getParentsNodes(exportdata);
-         const code = codex(parentsArray,array);
-         console.log(parentsArray);
+         const code = codex(parentsArray);
+         //console.log(parentsArray);
        
          //const statements = 
 
-        //console.log(exportdata);
+        console.log("Datas",exportdata);
       };
 
       return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance};
