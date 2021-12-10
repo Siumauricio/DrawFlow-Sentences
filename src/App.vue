@@ -376,17 +376,20 @@ export default {
             
           const node = array.shift();
           //console.log(node);
-            
+            let tabs = "";
             if(node.name == "For"){
-               code += " for i "+ "in" + " range(" + node.data.Start + "," + node.data.Finish + "):\n";
+                tabs = "\t";
+               code += "for i "+ "in" + " range(" + node.data.Start + "," + node.data.Finish + "):\n";
             }else if(node.name == "If"){
                code += "if "+ node.data.Expression1 +" "+  node.data.Operator+" " + node.data.Expression2 + ":\n";
+               tabs = "\t";
             }else if(node.name == "Assignation"){
                code += node.data.Name + " = " + node.data.Value + "\n";
+               tabs = "";
             }
             if(node.outputs.output_1.connections.length == 1){
                let nodeId = node.outputs.output_1.connections[0].node;
-               let tabs = "\t";
+               
               while(true){
                   let nodeActual =  editor.value.getNodeFromId(nodeId);
                if(nodeActual.name == "For"){
@@ -397,14 +400,23 @@ export default {
                   code += tabs+nodeActual.data.Name + " = " + nodeActual.data.Value + "\n";
                }else if(nodeActual.name =="Else"){
                   code += tabs+"else"+"\n";
+               }else if(nodeActual.name == "Print"){
+                 const valor  = editor.value.getNodeFromId(nodeActual.inputs.input_1.connections[0].node); 
+                 code += tabs+"print("+valor.data.Name+")"+"\n";
                }
                  if(nodeActual.outputs.output_1.connections.length == 1){
-                        nodeId = nodeActual.outputs.output_1.connections[0].node;
+                    //console.log(nodeActual.name)
+                        if(nodeActual.name == "For" || nodeActual.name =="If" || nodeActual.name=="Else"){
+                           console.log('tab')
                         tabs +="\t";
+                        }else{
+                           console.log('Tab Reiniciado')
+                           tabs += "";
+                        }
+                        nodeId = nodeActual.outputs.output_1.connections[0].node;
                   }else{
                      break;
                   }
-
             }
             }
           
