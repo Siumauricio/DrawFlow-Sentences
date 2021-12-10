@@ -7,8 +7,12 @@
                   <li class="list-group-item list-group-item-action list-group-item-primary" v-for="n in listNodes" :key="n" draggable="true" :data-node="n.item" @dragstart="drag($event)">
                      <div class="node" :style="`background: ${n.color};`">{{ n.name }}</div>
                   </li>
+
+                  <!-- <li class="list-group">
+                 <button type="button" class="btn btn-success" @click="toggleModal"></button>
+                  </li> -->
                   <li class="list-group">
-                     <button v-on:click="generatePythonCode($event)" type="button" class="btn btn-primary">Generate Python Code</button>
+                     <button v-on:click="generatePythonCode($event)" type="button" class="btn btn-primary"  @click="toggleModal">Generate Python Code</button>
                   </li>
                </ul>
             </div>
@@ -17,11 +21,60 @@
             </div>
          </div>
       </div>
+
+
+       <div>
+            <div  ref="modal" class="modal" :class="{show, 'd-block': active}" tabindex="-1"  role="dialog"  >
+               <div class="modal-dialog" role="document">
+               <div class="modal-content " style="width:900px">
+                  <div class="modal-header">
+                     <h5 class="modal-title">Program Section</h5>
+                     <button
+                     type="button"
+                     class="close"
+                     data-dismiss="modal"
+                     aria-label="Close"
+                     @click="toggleModal"
+                     >
+                     <span aria-hidden="true">&times;</span>
+                     </button>
+                  </div>
+                  <div class="modal-body">
+
+
+                  <code-highlight language="javascript">
+                     <code>
+                        <p style="color:white;"> {{codeGenerator}} </p>
+                     </code>
+
+                     </code-highlight>
+
+
+                     <!-- <p class="pre-formatted"></p> -->
+                <button  type="button" class="btn btn-primary" >Save Program</button> &nbsp;
+                <button  type="button" class="btn btn-primary" >Run Program</button> &nbsp;
+                <button  type="button" class="btn btn-primary" >List Programs</button> &nbsp;
+
+                     
+                  </div>
+               </div>
+               </div>
+            </div>
+            <div v-if="active" class="modal-backdrop fade show"></div>
+         </div>
+
+
+
    </div>
 </template>
 
 <script>
 /*eslint-disable */
+import CodeHighlight from "vue-code-highlight/src/CodeHighlight.vue";
+import "vue-code-highlight/themes/duotone-sea.css";
+import "vue-code-highlight/themes/window.css";
+
+
 import {h, getCurrentInstance, render, readonly, ref, onMounted, shallowRef} from "vue";
 import Drawflow from "drawflow";
 import {useStore} from "vuex";
@@ -36,6 +89,9 @@ import Print from "./components/Print.vue";
 
 export default {
    name: "App",
+   components:{
+      CodeHighlight,
+   },
    setup() {
       const listNodes = readonly([
          {
@@ -100,6 +156,9 @@ export default {
          },
       ]);
 
+      const codeGenerator = ref("");
+      const active = ref(false);
+      const show = ref(false);
       const editor = shallowRef({});
       const dialogVisible = ref(false);
       const dialogData = ref({});
@@ -107,6 +166,15 @@ export default {
       internalInstance.appContext.app._context.config.globalProperties.$df = editor;
       const Vue = {version: 3, h, render};
       const {state, dispatch} = useStore();
+
+     const toggleModal = () => {
+      const body = document.querySelector("body");
+      active.value = !active.value;
+      active.value
+        ? body.classList.add("modal-open")
+        : body.classList.remove("modal-open");
+      setTimeout(() => (show.value = !show.value), 10);
+    }
 
       const drag = (ev) => {
          if (ev.type === "touchstart") {
@@ -421,6 +489,7 @@ export default {
             }
           
             }
+            codeGenerator.value = code
          console.log(code);
 
             // while(true){
@@ -447,8 +516,8 @@ export default {
         console.log("Datas",exportdata);
       };
 
-      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance};
-   },
+      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance,toggleModal,active,show,codeGenerator};
+   }
 };
 </script>
 
@@ -492,6 +561,9 @@ ul {
 }
 .column li {
    background: transparent;
+}
+.pre-formatted {
+  white-space: pre;
 }
 .node {
    /* border-radius: 8px;
