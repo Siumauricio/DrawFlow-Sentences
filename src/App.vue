@@ -458,7 +458,7 @@ export default {
          let code = "";
          let i = 0;
          while(array.length > 0){
-            
+            let flag = false;
           const node = array.shift();
           //console.log(node);
             let tabs = "";
@@ -472,42 +472,57 @@ export default {
                code += node.data.Name + " = " + node.data.Value + "\n";
                tabs = "";
             }
+            let ifTabs = "";
             if(node.outputs.output_1.connections.length == 1){
                let nodeId = node.outputs.output_1.connections[0].node;
-               
+               let tmp = 0;
               while(true){
                   let nodeActual =  editor.value.getNodeFromId(nodeId);
+                  console.log(nodeActual);
                if(nodeActual.name == "For"){
                   code += tabs+"for i "+ "in" + " range(" + nodeActual.data.Start + "," + nodeActual.data.Finish + "):\n";
                }else if(nodeActual.name == "If"){
                   code += tabs+"if "+ nodeActual.data.Expression1 +" "+  nodeActual.data.Operator+" " + nodeActual.data.Expression2 + ":\n";
+                  ifTabs = tabs;
                }else if(nodeActual.name == "Assignation"){
                   code += tabs+nodeActual.data.Name + " = " + nodeActual.data.Value + "\n";
                }else if(nodeActual.name =="Else"){
-                  code += tabs+"else"+"\n";
+                  code += ifTabs+"else:"+"\n";
                }else if(nodeActual.name == "Print"){
                  const valor  = editor.value.getNodeFromId(nodeActual.inputs.input_1.connections[0].node); 
                  code += tabs+"print("+valor.data.Name+")"+"\n";
                }
                  if(nodeActual.outputs.output_1.connections.length == 1){
-                    //console.log(nodeActual.name)
-                        if(nodeActual.name == "For" || nodeActual.name =="If" || nodeActual.name=="Else"){
-                           console.log('tab')
+                        if(nodeActual.name == "For" || nodeActual.name =="If" ){
                         tabs +="\t";
                         }else{
-                           console.log('Tab Reiniciado')
                            tabs += "";
                         }
                         nodeId = nodeActual.outputs.output_1.connections[0].node;
-                  }else{
-                     break;
+
+                       
+                  } else if(nodeActual.outputs.output_1.connections.length == 2){
+                     if(nodeActual.name =="If"){
+                        flag = true;
+                        nodeId = nodeActual.outputs.output_1.connections[0].node;
+                        tmp = nodeActual.outputs.output_1.connections[1].node;
+                        tabs += "\t";
+                     }
+                    
+                  } else{
+                     if(flag){
+                        nodeId = tmp
+                        flag = false;
+                     }else{
+                        break;
+                     }
                   }
             }
             }
           
             }
             codeGenerator.value = code
-         console.log(code);
+        // console.log(code);
 
       }
       const generatePythonCode = (e) => {
@@ -521,7 +536,7 @@ export default {
        
          //const statements = 
 
-        console.log("Datas",exportdata);
+        //console.log("Datas",exportdata);
       };
 
       //request to api to get the data with axios
@@ -531,7 +546,7 @@ export default {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ Code: [codeGenerator.value] })
          };
-         console.log({ Code: [codeGenerator.value] })
+        // console.log({ Code: [codeGenerator.value] })
          await fetch("http://localhost:9000/insertCode",requestOptions)
          Swal.fire({
             position: 'center',
@@ -559,7 +574,7 @@ export default {
       }
       const setCode = (event)=>{
          const code =directory.value.find(x=> x.uid ==event.target.value )
-         console.log(code)
+         //console.log(code)
          codeGenerator.value = code.Code[0];
       }
       const runCode = async () =>{
@@ -571,7 +586,7 @@ export default {
          };
          const response = await fetch("http://localhost:9000/runProgram",requestOptions);
          const data = await response.json();
-         console.log(data);
+        // console.log(data);
          resultCode.value = data;
       }
 
