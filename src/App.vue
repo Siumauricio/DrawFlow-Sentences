@@ -49,12 +49,25 @@
                      </code>
 
                      </code-highlight>
+                     <!-- Display a output like as a code -->
+                <code-highlight language="javascript">
+                     <code>
+                        <p style="color:white;">{{resultCode}} </p>
+                     </code>
+                </code-highlight>
 
 
-                     <!-- <p class="pre-formatted"></p> -->
+
+
                 <button  type="button" class="btn btn-primary" @click="saveFile">Save Program</button> &nbsp;
-                <button  type="button" class="btn btn-primary" >Run Program</button> &nbsp;
+                <button  type="button" class="btn btn-primary" @click="runCode">Run Program</button> &nbsp;
                 <button  type="button" class="btn btn-primary" @click="getAllFiles">List Programs</button> &nbsp;
+
+
+                  <select class="form-select mt-3" @change="setCode($event)">
+                  <option>Select here</option>
+                  <option v-for="(item, index) in directory" :key="index" >{{ item.uid }}</option>
+               </select>
 
                      
                   </div>
@@ -158,6 +171,8 @@ export default {
       ]);
 
       const codeGenerator = ref("");
+      const resultCode = ref("");
+      const directory = ref({});
       const active = ref(false);
       const show = ref(false);
       const editor = shallowRef({});
@@ -169,6 +184,7 @@ export default {
       const {state, dispatch} = useStore();
 
      const toggleModal = () => {
+      resultCode.value = "";
       const body = document.querySelector("body");
       active.value = !active.value;
       active.value
@@ -532,11 +548,35 @@ export default {
          };
          const response = await fetch("http://localhost:9000/getAll",requestOptions);
          const data = await response.json();
-         console.log(data.getAll[25].Code[0]);
+         directory.value = data.getAll;
+         Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: "Files Loaded",
+            showConfirmButton: false,
+            timer: 1500,
+         });
+      }
+      const setCode = (event)=>{
+         const code =directory.value.find(x=> x.uid ==event.target.value )
+         console.log(code)
+         codeGenerator.value = code.Code[0];
+      }
+      const runCode = async () =>{
+          const requestOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Code: [codeGenerator.value] })
+
+         };
+         const response = await fetch("http://localhost:9000/runProgram",requestOptions);
+         const data = await response.json();
+         console.log(data);
+         resultCode.value = data;
       }
 
 
-      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance,toggleModal,active,show,codeGenerator,saveFile,getAllFiles};
+      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance,toggleModal,active,show,codeGenerator,saveFile,getAllFiles,directory,setCode,runCode,resultCode};
    }
 };
 </script>
