@@ -1,5 +1,6 @@
 <template>
    <div id="app">
+      
       <div class="container" style="height: 1000px; max-width: 100%; max-height: 100%">
          <div class="row">
             <div class="col-md-6 mx-auto" style="width: 200px; text-align: center; padding-right: 0px; padding-left: 0px">
@@ -51,9 +52,9 @@
 
 
                      <!-- <p class="pre-formatted"></p> -->
-                <button  type="button" class="btn btn-primary" >Save Program</button> &nbsp;
+                <button  type="button" class="btn btn-primary" @click="saveFile">Save Program</button> &nbsp;
                 <button  type="button" class="btn btn-primary" >Run Program</button> &nbsp;
-                <button  type="button" class="btn btn-primary" >List Programs</button> &nbsp;
+                <button  type="button" class="btn btn-primary" @click="getAllFiles">List Programs</button> &nbsp;
 
                      
                   </div>
@@ -68,13 +69,13 @@
    </div>
 </template>
 
+
 <script>
 /*eslint-disable */
 import CodeHighlight from "vue-code-highlight/src/CodeHighlight.vue";
 import "vue-code-highlight/themes/duotone-sea.css";
 import "vue-code-highlight/themes/window.css";
-
-
+import Swal from 'sweetalert2'
 import {h, getCurrentInstance, render, readonly, ref, onMounted, shallowRef} from "vue";
 import Drawflow from "drawflow";
 import {useStore} from "vuex";
@@ -492,15 +493,6 @@ export default {
             codeGenerator.value = code
          console.log(code);
 
-            // while(true){
-
-            // }
-
-            
-         
-
-         //console.log(editor)
-
       }
       const generatePythonCode = (e) => {
          var exportdata = editor.value.export();
@@ -516,7 +508,35 @@ export default {
         console.log("Datas",exportdata);
       };
 
-      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance,toggleModal,active,show,codeGenerator};
+      //request to api to get the data with axios
+      const  saveFile=async()=>{
+           const requestOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Code: [codeGenerator.value] })
+         };
+         console.log({ Code: [codeGenerator.value] })
+         await fetch("http://localhost:9000/insertCode",requestOptions)
+         Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: "Program Saved",
+            showConfirmButton: false,
+            timer: 1500,
+         });
+      }
+      const getAllFiles = async()=>{
+         const requestOptions = {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+         };
+         const response = await fetch("http://localhost:9000/getAll",requestOptions);
+         const data = await response.json();
+         console.log(data.getAll[25].Code[0]);
+      }
+
+
+      return {listNodes, drag, drop, allowDrop, dialogVisible, dialogData, generatePythonCode, internalInstance,toggleModal,active,show,codeGenerator,saveFile,getAllFiles};
    }
 };
 </script>
